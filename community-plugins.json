@@ -1,5 +1,12 @@
 [
   {
+    "id": "ai-quota-monitor",
+    "repo": "libo-zhou/ccgui-plugin-ai-quota-monitor",
+    "name": "AI 配额与用量监控",
+    "description": "当前支持 Google Antigravity（Gemini）和 OpenAI Codex，查看可用额度、用量与重置时间；其他 AI 服务待适配。支持底部状态栏、详情弹窗、自动刷新及当前会话联动。",
+    "author": "libo-zhou"
+  },
+  {
     "id": "auto-title",
     "repo": "zhukunpenglinyutong/ccgui-plugin-auto-title",
     "name": "会话自动命名",
