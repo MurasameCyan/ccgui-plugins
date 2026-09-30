@@ -35,6 +35,13 @@
     "author": "wszbest68-gif"
   },
   {
+    "id": "font-tuner",
+    "repo": "3774929/ccgui-plugin-font-tuner",
+    "name": "字体调校",
+    "description": "自定义窗口界面字体、对话内容字体与代码字体，并可配置字号、行高、字距、字体平滑与文本渲染方式。",
+    "author": "3774929"
+  },
+  {
     "id": "model-switcher",
     "repo": "Guardian-J/ccgui-plugin-model-switcher",
     "name": "模型与供应商助手",

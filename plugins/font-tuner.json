@@ -1,0 +1,17 @@
+{
+  "id": "font-tuner",
+  "repo": "3774929/ccgui-plugin-font-tuner",
+  "tier": "js",
+  "version": "0.3.0",
+  "minAppVersion": "1.0.0",
+  "sdkVersion": "^0.3",
+  "permissions": [
+    "storage",
+    "theme",
+    "ui:settings-section"
+  ],
+  "sha256": {
+    "main.js": "9e3639ba3fc98c05a755b9297d7ec6ad6ae208b064f2471d55389c5816131540",
+    "manifest.json": "227923cc04c573b6539319e4bc48d2ce9a387da31c6a3d96867611e36ec71ae3"
+  }
+}
