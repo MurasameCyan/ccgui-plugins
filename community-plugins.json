@@ -42,6 +42,13 @@
     "author": "Guardian-J"
   },
   {
+    "id": "port-manager",
+    "repo": "hekai753/port-manager",
+    "name": "端口管理",
+    "description": "按工作区分组展示本机监听中的 TCP 端口，分组可折叠，支持一键打开浏览器和关闭端口；自动适配 macOS / Linux / Windows，纯本地执行不出网。",
+    "author": "hekai753"
+  },
+  {
     "id": "react-doctor",
     "repo": "zhukunpenglinyutong/ccgui-plugin-react-doctor",
     "name": "React Doctor",
