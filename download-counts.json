@@ -1,18 +1,18 @@
 {
   "ai-quota-monitor": 16,
-  "auto-title": 527,
-  "balance-meter": 220,
+  "auto-title": 531,
+  "balance-meter": 222,
   "claude-ip-check": 90,
-  "composer-rainbow-border": 479,
-  "engine-hopper": 204,
+  "composer-rainbow-border": 482,
+  "engine-hopper": 207,
   "font-tuner": 12,
-  "model-switcher": 645,
+  "model-switcher": 649,
   "port-manager": 20,
   "react-doctor": 296,
   "service-status": 110,
   "session-notes": 84,
-  "session-rainbow-border": 25,
-  "token-meter": 486,
-  "window-model-assistant": 101,
-  "wsl": 164
+  "session-rainbow-border": 26,
+  "token-meter": 490,
+  "window-model-assistant": 102,
+  "wsl": 165
 }
