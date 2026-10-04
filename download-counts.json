@@ -1,18 +1,18 @@
 {
   "ai-quota-monitor": 16,
-  "auto-title": 531,
+  "auto-title": 533,
   "balance-meter": 223,
   "claude-ip-check": 90,
   "composer-rainbow-border": 482,
-  "engine-hopper": 210,
+  "engine-hopper": 212,
   "font-tuner": 12,
-  "model-switcher": 654,
+  "model-switcher": 659,
   "port-manager": 20,
   "react-doctor": 296,
   "service-status": 110,
   "session-notes": 84,
   "session-rainbow-border": 27,
-  "token-meter": 494,
-  "window-model-assistant": 104,
+  "token-meter": 495,
+  "window-model-assistant": 106,
   "wsl": 165
 }
