@@ -27,6 +27,12 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const COMMUNITY_FILE = "community-plugins.json";
 const PLUGINS_DIR = "plugins";
+/** 编辑精选（客户端市场页首屏轮播，方案 A）。文件可缺省 = 没有精选区。 */
+const FEATURED_FILE = "featured.json";
+/** 客户端同一上限（desktop-cc-gui src-tauri/src/plugins/market.rs 的
+ *  MAX_FEATURED_ROWS）：多出来的行客户端会静默忽略，所以在登记入口就拦下。 */
+const FEATURED_MAX_ROWS = 8;
+const FEATURED_KEYS = new Set(["id", "tagline", "note", "image"]);
 
 // ---------------------------------------------------------------------------
 // 权限白名单（镜像 plugin-sdk/spec/permissions.json，SDK 0.3.20；勿在此独断修改）
@@ -465,6 +471,57 @@ export function validateCommunityList(list, errors, warnings) {
 }
 
 // ---------------------------------------------------------------------------
+// featured.json 校验（编辑精选：id + 编辑文案 + 可选封面）
+// ---------------------------------------------------------------------------
+/**
+ * 精选条目只是「指向索引里已有插件的编辑文案」，所以规则很短：
+ * id 必须已在 community-plugins.json 里（否则客户端整条丢掉）、不重复、
+ * 不超过客户端上限；tagline/note 要么是非空文案要么整字段不写；image 走与
+ * icon 相同的素材路径规则（相对路径按**插件仓库**解析，绝对 https 直连）。
+ */
+export function validateFeatured(list, knownIds, errors, warnings) {
+  if (list === null) return;
+  if (!Array.isArray(list)) {
+    errors.push(`${FEATURED_FILE} 必须是数组（或整个文件不写）`);
+    return;
+  }
+  if (list.length > FEATURED_MAX_ROWS) {
+    errors.push(`${FEATURED_FILE} 有 ${list.length} 条，超过客户端上限 ${FEATURED_MAX_ROWS} 条（多出的不会显示）`);
+  }
+  const seen = new Set();
+  for (const [i, row] of list.entries()) {
+    const where = `${FEATURED_FILE}[${i}]`;
+    if (typeof row !== "object" || row === null) {
+      errors.push(`${where} 必须是对象`);
+      continue;
+    }
+    for (const k of Object.keys(row)) {
+      if (!FEATURED_KEYS.has(k)) warnings.push(`${where} 含未知字段 "${k}"（客户端会忽略）`);
+    }
+    if (typeof row.id !== "string" || !row.id.trim()) {
+      errors.push(`${where}.id 缺失或不是非空字符串`);
+      continue;
+    }
+    if (seen.has(row.id)) errors.push(`${where}.id "${row.id}" 重复（同一插件只该出现一次）`);
+    seen.add(row.id);
+    if (!knownIds.has(row.id)) {
+      errors.push(`${where}.id "${row.id}" 不在 ${COMMUNITY_FILE} 里 —— 客户端会把这一条静默丢掉，等于白写`);
+    }
+    for (const key of ["tagline", "note"]) {
+      if (row[key] === undefined) continue;
+      if (typeof row[key] !== "string" || !row[key].trim()) {
+        errors.push(`${where}.${key} 必须是非空字符串（没有就整字段不写）`);
+      } else if (/[\u0000-\u001f\u007f]/.test(row[key])) {
+        errors.push(`${where}.${key} 含控制字符`);
+      }
+    }
+    if (row.image !== undefined && normalizeMediaPath(row.image) === null) {
+      errors.push(`${where}.image 不合法（插件仓库内相对路径或 https URL，图片扩展名，≤ ${MAX_MEDIA_PATH_CHARS} 字符）`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // plugins/<id>.json schema 校验
 // ---------------------------------------------------------------------------
 export function validateEntry(entry, fileName, errors, warnings) {
@@ -710,6 +767,12 @@ async function main() {
   for (const id of pluginIds) {
     if (!communityIds.has(id)) errors.push(`${PLUGINS_DIR}/${id}.json 存在但未登记进 ${COMMUNITY_FILE}`);
   }
+
+  // featured.json：编辑精选指向的必须是已登记的 id（缺文件 = 没有精选区）
+  const featured = existsSync(path.join(ROOT, FEATURED_FILE))
+    ? loadJson(FEATURED_FILE, errors)
+    : null;
+  validateFeatured(featured, communityIds, errors, warnings);
 
   // 2. 决定远端核查范围
   let changedFiles = null;
