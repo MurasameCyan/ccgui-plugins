@@ -3,6 +3,13 @@
 规范全文见 desktop-cc-gui 仓库 `docs/plugin-development-guide.zh-CN.md`。
 本文件只记录规范的演进；每次规范变更（新权限、新字段、规则收紧）在此追加一段。
 
+## v0.3 — 2026-10（SDK 0.3.20 权限与命名空间 ID）
+
+- 基座权限同步宿主 SDK 0.3.20 的 `packages/plugin-sdk/spec/permissions.json`，共 36 项；首次登记与版本机器人共用同一校验器，不对单个插件设置豁免。
+- ID 支持点分命名空间，例如 `ccgui.client-context-bridge`：总长 2–64 个 ASCII 字符，每段为 `[a-z0-9][a-z0-9-]*`；拒绝空段、首尾点、非法段首、路径分隔符、非 ASCII 与控制字符（包括尾随换行）。普通连字符 ID 保持兼容，登记文件名仍须等于 ID。
+- `network:none` 仍只是“不申请网络”的声明，不是网络主机授权；`network:none:80` 等伪授权、未知权限和尾随控制字符继续拒绝。
+- 校验工作流在远端附件核查前执行 Node 行为回归，覆盖登记与版本更新、权限和 ID 边界、现有条目兼容及黑名单门禁。
+
 ## v0.2 — 2026-09（展示素材：icon / screenshots）
 
 - 新增可选字段 `icon`（方形图标，一个）与 `screenshots`（效果图，≤ 5 张），位置：插件仓库 `manifest.json`；首次上架时照样写入 `plugins/<id>.json`。

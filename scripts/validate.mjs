@@ -29,7 +29,7 @@ const COMMUNITY_FILE = "community-plugins.json";
 const PLUGINS_DIR = "plugins";
 
 // ---------------------------------------------------------------------------
-// 权限白名单（镜像 plugin-sdk/spec/permissions.json；勿在此独断修改）
+// 权限白名单（镜像 plugin-sdk/spec/permissions.json，SDK 0.3.20；勿在此独断修改）
 // ---------------------------------------------------------------------------
 const KNOWN_PERMISSIONS = new Set([
   "storage",
@@ -38,13 +38,16 @@ const KNOWN_PERMISSIONS = new Set([
   "ui:composer-status",
   "ui:panel-tab",
   "ui:status-bar",
+  "ui:overlay",
   "ui:command",
-  "ui:session-menu",
   "ui:markdown",
   "ui:page",
   "ui:timeline-row",
+  "ui:workspace-menu",
+  "ui:session-menu",
   "ui:sidebar-entry",
   "ui:center-tab",
+  "ui:conversation-mode",
   "agent",
   "theme",
   "i18n",
@@ -54,22 +57,31 @@ const KNOWN_PERMISSIONS = new Set([
   "host:session",
   "host:workspace",
   "host:workspace:remote",
+  "host:worktree",
   "host:window",
   "host:models",
+  "session.lifecycle.read",
+  "runtime.events.read",
+  "runtime.switch.observe",
+  "prompt.contribute.internal",
+  "workspace.metadata.read",
+  "plugin.storage",
+  "assets:bundle",
+  "assets:directory",
 ]);
 
 /** network: 授权体：<host>（任意端口）/ <host>:<port> / <host>:<a>-<b>（含端点）。 */
-const NETWORK_GRANT_RE = /^([A-Za-z0-9.-]+)(?::(\d+)(?:-(\d+))?)?$/;
+// $(?![\s\S]) 要求真正的字符串尾，不能让 $ 放过末尾换行。
+const NETWORK_GRANT_RE = /^([A-Za-z0-9.-]+)(?::(\d+)(?:-(\d+))?)?$(?![\s\S])/;
 /** exec: 授权的二进制名：裸名，禁路径分隔符。 */
-const EXEC_BIN_RE = /^[A-Za-z0-9._-]+$/;
+const EXEC_BIN_RE = /^[A-Za-z0-9._-]+$(?![\s\S])/;
 
 export function isKnownPermission(p) {
   if (KNOWN_PERMISSIONS.has(p)) return true;
   if (p.startsWith("network:")) {
     const body = p.slice("network:".length);
-    if (body.toLowerCase() === "none") return false; // network:none 是基座权限，不是授权
     const m = NETWORK_GRANT_RE.exec(body);
-    if (!m) return false;
+    if (!m || m[1].toLowerCase() === "none") return false; // none 仅是基座权限，不能带端口变成授权
     if (m[2] === undefined) return true;
     const from = Number(m[2]);
     const to = m[3] === undefined ? from : Number(m[3]);
@@ -102,7 +114,8 @@ export function compareSemver(a, b) {
 // ---------------------------------------------------------------------------
 // schema 常量
 // ---------------------------------------------------------------------------
-const ID_RE = /^[a-z0-9][a-z0-9-]{1,63}$/;
+// pluginIdShapes：全 ASCII、总长 2..64 字节；每个点分段首字符须为小写字母或数字。
+const ID_RE = /^[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$(?![\s\S])/;
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const SHA256_RE = /^[0-9a-f]{64}$/;
 const SDK_RANGE_RE = /^(\^|~|>=)?\d+\.\d+(\.\d+)?$|^\*$/;
@@ -112,6 +125,11 @@ const ENTRY_KEYS = new Set([
   "permissions", "sha256", "delisted", "pubkey", "icon", "screenshots",
 ]);
 const COMMUNITY_KEYS = new Set(["id", "repo", "name", "description", "author"]);
+
+/** 与宿主的插件目录名/路径穿越护栏一致，登记与自动升级共用。 */
+export function isValidPluginId(id) {
+  return typeof id === "string" && id.length >= 2 && id.length <= 64 && ID_RE.test(id);
+}
 
 /** 展示素材（SPEC-CHANGELOG v0.2）：manifest 声明，机器人镜像进索引。 */
 const MAX_SCREENSHOTS = 5;
@@ -326,7 +344,7 @@ export function validateCommunityList(list, errors, warnings) {
       if (typeof item[k] !== "string" || !item[k].trim()) errors.push(`${where}.${k} 缺失或不是非空字符串`);
     }
     if (typeof item.id === "string") {
-      if (!ID_RE.test(item.id)) errors.push(`${where}.id "${item.id}" 不合法（${ID_RE}）`);
+      if (!isValidPluginId(item.id)) errors.push(`${where}.id "${item.id}" 不合法（2..64 字节，${ID_RE}）`);
       if (seen.has(item.id)) errors.push(`${where}.id "${item.id}" 重复`);
       seen.add(item.id);
       if (prev !== null && item.id.localeCompare(prev) <= 0) {
@@ -353,8 +371,8 @@ export function validateEntry(entry, fileName, errors, warnings) {
   for (const k of Object.keys(entry)) {
     if (!ENTRY_KEYS.has(k)) warnings.push(`${where} 含未知字段 "${k}"`);
   }
-  if (typeof entry.id !== "string" || !ID_RE.test(entry.id)) {
-    errors.push(`${where}.id 不合法（${ID_RE}）`);
+  if (!isValidPluginId(entry.id)) {
+    errors.push(`${where}.id 不合法（2..64 字节，${ID_RE}）`);
   } else if (entry.id !== fileName.replace(/\.json$/, "")) {
     errors.push(`${where}.id "${entry.id}" 与文件名 "${fileName}" 不一致`);
   }
