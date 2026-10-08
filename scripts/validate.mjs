@@ -263,31 +263,54 @@ export const CSS_BLACKLIST = [
   { re: /url\(\s*['"]?https?:\/\//i, label: "url(http…)" },
 ];
 
-// ctx API → 所需权限（权限-代码比对启发式；事实源 plugin-sdk references/api.md）
+/**
+ * ctx API → 所需权限（权限-代码比对启发式；事实源 plugin-sdk references/api.md）。
+ *
+ * 匹配**成员路径后缀**而非字面 `ctx.`：登记的产物是压缩后的 bundle，
+ * `ctx` 这个形参名基本都被改名（实测形态 `t.ui.registerOverlay(`、
+ * `e.hooks.registerTurnHooks(`、`this.ctx.assets.bundleUrl(`）。
+ * 旧写法要求字面 `ctx.`，于是「漏声明 = 错误」这条门禁在压缩产物上整体失效，
+ * 同时把正确声明的权限全报成「未检出」。
+ */
 const CTX_PERMISSION_MAP = [
-  { re: /ctx\.ui\.registerSettingsSection\s*\(/, permission: "ui:settings-section" },
-  { re: /ctx\.ui\.registerAddMenuRow\s*\(/, permission: "ui:add-menu" },
-  { re: /ctx\.ui\.registerComposerSlot\s*\(/, permission: "ui:composer-status" },
-  { re: /ctx\.ui\.registerComposerStatusItem\s*\(/, permission: "ui:composer-status" },
-  { re: /ctx\.ui\.registerPanelTab\s*\(/, permission: "ui:panel-tab" },
-  { re: /ctx\.ui\.registerStatusBarItem\s*\(/, permission: "ui:status-bar" },
-  { re: /ctx\.ui\.registerComposerStatusItem\s*\(/, permission: "ui:composer-status" },
-  { re: /ctx\.ui\.registerCommand\s*\(/, permission: "ui:command" },
-  { re: /ctx\.ui\.registerMarkdownRenderer\s*\(/, permission: "ui:markdown" },
-  { re: /ctx\.ui\.registerPage\s*\(/, permission: "ui:page" },
-  { re: /ctx\.ui\.registerTimelineRowRenderer\s*\(/, permission: "ui:timeline-row" },
-  { re: /ctx\.ui\.registerSidebarNav\s*\(/, permission: "ui:sidebar-entry" },
-  { re: /ctx\.ui\.registerCenterTab\s*\(/, permission: "ui:center-tab" },
-  { re: /ctx\.ui\.openCenterTab\s*\(/, permission: "ui:center-tab" },
-  { re: /ctx\.agent\./, permission: "agent" },
-  { re: /ctx\.theme\./, permission: "theme" },
-  { re: /ctx\.i18n\./, permission: "i18n" },
-  { re: /ctx\.storage\./, permission: "storage" },
-  { re: /ctx\.events\./, permission: "events" },
-  { re: /ctx\.workspaces\.add\s*\(/, permission: "host:workspace" },
-  { re: /ctx\.sessions\./, permission: "host:session" },
-  { re: /ctx\.window\./, permission: "host:window" },
-  { re: /ctx\.models\./, permission: "host:models" },
+  { re: /\.ui\.registerSettingsSection\s*\(/, permission: "ui:settings-section" },
+  { re: /\.ui\.registerAddMenuRow\s*\(/, permission: "ui:add-menu" },
+  { re: /\.ui\.registerComposerSlot\s*\(/, permission: "ui:composer-status" },
+  { re: /\.ui\.registerComposerStatusItem\s*\(/, permission: "ui:composer-status" },
+  { re: /\.ui\.registerPanelTab\s*\(/, permission: "ui:panel-tab" },
+  { re: /\.ui\.registerStatusBarItem\s*\(/, permission: "ui:status-bar" },
+  { re: /\.ui\.registerOverlay\s*\(/, permission: "ui:overlay" },
+  { re: /\.ui\.registerCommand\s*\(/, permission: "ui:command" },
+  { re: /\.ui\.registerMarkdownRenderer\s*\(/, permission: "ui:markdown" },
+  { re: /\.ui\.registerPage\s*\(/, permission: "ui:page" },
+  { re: /\.ui\.registerTimelineRowRenderer\s*\(/, permission: "ui:timeline-row" },
+  { re: /\.ui\.registerSidebarNav\s*\(/, permission: "ui:sidebar-entry" },
+  { re: /\.ui\.registerCenterTab\s*\(/, permission: "ui:center-tab" },
+  { re: /\.ui\.openCenterTab\s*\(/, permission: "ui:center-tab" },
+  { re: /\.ui\.registerWorkspaceMenuItem\s*\(/, permission: "ui:workspace-menu" },
+  { re: /\.ui\.registerSessionMenuItem\s*\(/, permission: "ui:session-menu" },
+  { re: /\.ui\.registerConversationMode\s*\(/, permission: "ui:conversation-mode" },
+  { re: /\.hooks\.registerSessionHooks\s*\(/, permission: "session.lifecycle.read" },
+  { re: /\.hooks\.registerTurnHooks\s*\(/, permission: "runtime.events.read" },
+  { re: /\.hooks\.registerRuntimeSwitchHooks\s*\(/, permission: "runtime.switch.observe" },
+  { re: /\.documentStorage\./, permission: "plugin.storage" },
+  { re: /\.assets\.(bundleUrl|documentUrl)\s*\(/, permission: "assets:bundle" },
+  { re: /\.assets\.(grantDirectory|listDirectories|revokeDirectory|directoryUrl)\s*\(/, permission: "assets:directory" },
+  { re: /\.workspace\.getMetadata\s*\(/, permission: "workspace.metadata.read" },
+  { re: /\.agent\.(catalog|start|interrupt)\s*\(/, permission: "agent" },
+  { re: /\.theme\.(injectCss|setTokens)\s*\(/, permission: "theme" },
+  { re: /\.i18n\.addBundle\s*\(/, permission: "i18n" },
+  { re: /\.storage\.(get|set|delete)\s*\(/, permission: "storage" },
+  { re: /\.events\.(on|emit)\s*\(/, permission: "events" },
+  { re: /\.workspaces\.add\s*\(/, permission: "host:workspace" },
+  { re: /\.composer\.setDraft\s*\(/, permission: "composer:draft" },
+  // 这三条必须按方法名匹配，不能用裸命名空间：压缩产物里 `window.`、
+  // `.models.map(`、`.sessions.length` 之类的普通表达式会把无关插件误判成
+  // 「漏声明权限」（实测会误伤 engine-hopper / model-switcher /
+  // token-meter / window-model-assistant）。
+  { re: /\.sessions\.(selectSession|refresh|setEffort|startRun|interruptRun|registerSource)\s*\(/, permission: "host:session" },
+  { re: /\.window\.(getState|setNormalBounds|sampleWechat)\s*\(/, permission: "host:window" },
+  { re: /\.models\.(listEngines|listEngineModels|catalog)\s*\(/, permission: "host:models" },
 ];
 const BRIDGE_NETWORK_RE = /plugin_http_request/;
 const BRIDGE_EXEC_RE = /plugin_exec_(run|spawn)/;
