@@ -280,10 +280,48 @@ test("permission comparison flags undeclared capabilities in minified bundles", 
 });
 
 test("permission comparison still reads unminified ctx receivers", () => {
-  const source = `export function activate(ctx){ctx.ui.registerCommand({});ctx.theme.apply();}`;
+  const source = `export function activate(ctx){ctx.ui.registerCommand({});ctx.theme.injectCss("");}`;
   const { errors } = comparePermissionsWithCode("p", [], source);
   assert.ok(errors.some((e) => e.includes('"ui:command"')));
   assert.ok(errors.some((e) => e.includes('"theme"')));
+});
+
+// 通用名字的 namespace 绝不能靠裸 `.ns.` 匹配：下面全是 2026-10-08 在已上架
+// 插件产物里实测到的真实形状（model-switcher / token-meter /
+// window-model-assistant），裸匹配会把它们全判成「未声明权限」而拒掉 PR。
+test("permission comparison does not mistake data fields for host namespaces", () => {
+  const dataShapes = `
+    const p = Array.isArray(m.models) ? m.models.map(x => x.id) : [];
+    const n = d.models.length + k.models.filter(Boolean).length;
+    const s = this.sessions.get(id); this.sessions.set(id, s);
+    const w = !!e.window && typeof e.window.getState;
+    const c = cache.storage.size; obj.events.length;
+    const t = node.theme.name; item.agent.label; row.i18n.locale;
+  `;
+  const { errors } = comparePermissionsWithCode("p", [], dataShapes);
+  assert.deepEqual(errors, [], "data members must not be read as SDK calls");
+});
+
+test("permission comparison detects host namespaces through their real methods", () => {
+  const calls = [
+    [`x.models.catalog({})`, "host:models"],
+    [`x.models.listEngines()`, "host:models"],
+    [`x.sessions.selectSession(1)`, "host:session"],
+    [`x.window.getState()`, "host:window"],
+    [`x.storage.set("k", 1)`, "storage"],
+    [`x.events.on("e", f)`, "events"],
+    [`x.theme.setTokens({})`, "theme"],
+    [`x.agent.start({})`, "agent"],
+    [`x.worktrees.create({})`, "host:worktree"],
+    [`x.composer.setDraft("")`, "composer:draft"],
+  ];
+  for (const [source, permission] of calls) {
+    const { errors } = comparePermissionsWithCode("p", [], source);
+    assert.ok(
+      errors.some((e) => e.includes(`"${permission}"`)),
+      `${source} should require ${permission}: ${errors.join(" | ")}`,
+    );
+  }
 });
 
 test("permission comparison keeps bridge network and exec gates", () => {

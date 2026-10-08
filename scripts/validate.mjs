@@ -262,20 +262,37 @@ const CTX_PERMISSION_MAP = [
   { api: "ui.registerSessionMenuItem", re: /\.ui\.registerSessionMenuItem\s*\(/, requires: "ui:session-menu" },
   { api: "ui.registerOverlay", re: /\.ui\.registerOverlay\s*\(/, requires: "ui:overlay" },
   { api: "ui.registerConversationMode", re: /\.ui\.registerConversationMode\s*\(/, requires: "ui:conversation-mode" },
-  { api: "agent", re: /\.agent\./, requires: "agent" },
-  { api: "theme", re: /\.theme\./, requires: "theme" },
-  { api: "i18n", re: /\.i18n\./, requires: "i18n" },
-  { api: "storage", re: /\.storage\./, requires: "storage" },
-  { api: "events", re: /\.events\./, requires: "events" },
+  // 通用名字的 namespace（models / sessions / window / storage / events …）必须
+  // 连同 SDK 真实方法名一起匹配：裸 `.models.` 会打到 API 响应里的数据字段
+  // （实测 `d.models.map`、`k.models.length`）、内部 Map（`this.sessions.get`）
+  // 和特性探测（`e.window.getState` 之外的 `e.window &&`），把合规插件判死。
+  // SDK 方法名与 Array/Map 的成员名不重叠，所以绑方法名既避免误报也不漏真调用。
+  { api: "agent.*", re: /\.agent\.(catalog|start|interrupt)\s*\(/, requires: "agent" },
+  { api: "theme.*", re: /\.theme\.(injectCss|setTokens)\s*\(/, requires: "theme" },
+  { api: "i18n.addBundle", re: /\.i18n\.addBundle\s*\(/, requires: "i18n" },
+  { api: "storage.*", re: /\.storage\.(get|set|delete)\s*\(/, requires: "storage" },
+  { api: "events.*", re: /\.events\.(on|emit)\s*\(/, requires: "events" },
   { api: "composer.setDraft", re: /\.composer\.setDraft\s*\(/, requires: "composer:draft" },
-  { api: "documentStorage", re: /\.documentStorage\./, requires: "plugin.storage" },
+  { api: "documentStorage.*", re: /\.documentStorage\.[A-Za-z]+\s*\(/, requires: "plugin.storage" },
   { api: "workspace.getMetadata", re: /\.workspace\.getMetadata\s*\(/, requires: "workspace.metadata.read" },
   { api: "workspaces.add", re: /\.workspaces\.add\s*\(/, requires: "host:workspace" },
   { api: "workspaces.list", re: /\.workspaces\.list\s*\(/, requires: "host:workspace" },
-  { api: "worktrees", re: /\.worktrees\.(create|remove)\s*\(/, requires: "host:worktree" },
-  { api: "sessions", re: /\.sessions\./, requires: "host:session" },
-  { api: "window", re: /\.window\./, requires: "host:window" },
-  { api: "models", re: /\.models\./, requires: "host:models" },
+  { api: "worktrees.*", re: /\.worktrees\.(create|remove)\s*\(/, requires: "host:worktree" },
+  {
+    api: "sessions.*",
+    re: /\.sessions\.(selectSession|refresh|setEffort|startRun|interruptRun|registerSource|list)\s*\(/,
+    requires: "host:session",
+  },
+  {
+    api: "window.*",
+    re: /\.window\.(getState|setNormalBounds|sampleWechat)\s*\(/,
+    requires: "host:window",
+  },
+  {
+    api: "models.*",
+    re: /\.models\.(listEngines|listEngineModels|catalog)\s*\(/,
+    requires: "host:models",
+  },
   { api: "hooks.registerSessionHooks", re: /\.hooks\.registerSessionHooks\s*\(/, requires: "session.lifecycle.read" },
   { api: "hooks.registerRuntimeSwitchHooks", re: /\.hooks\.registerRuntimeSwitchHooks\s*\(/, requires: "runtime.switch.observe" },
   // 同一调用点按 hooks 字段分别门禁（onRuntimeEvent/afterTurn 要
