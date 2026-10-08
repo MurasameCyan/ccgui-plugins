@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import {
+  comparePermissionsWithCode,
+  fetchWithRetry,
   isKnownPermission,
   validateCommunityList,
   validateEntry,
@@ -248,4 +250,99 @@ test("namespaced IDs and new permissions do not bypass the bundle blacklist", as
   const result = await buildBumpedEntry(old.id, old, candidate.version, candidate, Object.keys(files));
   assert.equal(result.entry, undefined);
   assert.equal(typeof result.skip, "string");
+});
+
+// --- 权限-代码比对：接收者名字不得参与匹配 -------------------------------
+// 打包产物会把 activate 的上下文参数压缩成任意标识符；启发式一旦绑定 `ctx.`
+// 就对所有压缩 bundle 失效——「调用了却没声明」这条错误判定会静默放空。
+const minifiedBundle = `
+  function a(t){t.ui.registerSettingsSection({});t.ui.registerWorkspaceMenuItem({});
+  t.i18n.addBundle({});t.storage.get("k");t.events.emit("e");
+  t.workspace.getMetadata();t.workspaces.list();t.documentStorage.getLocation();
+  t.hooks.registerSessionHooks({});t.hooks.registerRuntimeSwitchHooks({});
+  t.hooks.registerTurnHooks({});}
+`;
+
+test("permission comparison detects capabilities through minified receivers", () => {
+  const { errors, warnings } = comparePermissionsWithCode("ccb", ccbPermissions, minifiedBundle);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(warnings, []);
+});
+
+test("permission comparison flags undeclared capabilities in minified bundles", () => {
+  const { errors } = comparePermissionsWithCode("ccb", ["storage"], minifiedBundle);
+  const missing = ["ui:settings-section", "ui:workspace-menu", "i18n", "events",
+    "workspace.metadata.read", "host:workspace", "plugin.storage",
+    "session.lifecycle.read", "runtime.switch.observe"];
+  for (const p of missing) {
+    assert.ok(errors.some((e) => e.includes(`"${p}"`)), `expected error for ${p}: ${errors.join(" | ")}`);
+  }
+});
+
+test("permission comparison still reads unminified ctx receivers", () => {
+  const source = `export function activate(ctx){ctx.ui.registerCommand({});ctx.theme.apply();}`;
+  const { errors } = comparePermissionsWithCode("p", [], source);
+  assert.ok(errors.some((e) => e.includes('"ui:command"')));
+  assert.ok(errors.some((e) => e.includes('"theme"')));
+});
+
+test("permission comparison keeps bridge network and exec gates", () => {
+  const net = comparePermissionsWithCode("p", ["storage"], `plugin_http_request({})`);
+  assert.ok(net.errors.some((e) => e.includes("network:")));
+  const exec = comparePermissionsWithCode("p", ["storage"], `plugin_exec_run({})`);
+  assert.ok(exec.errors.some((e) => e.includes("exec:")));
+});
+
+test("turn hooks satisfy both field-gated permissions without demanding either", () => {
+  const source = `function a(t){t.hooks.registerTurnHooks({});}`;
+  const declared = ["runtime.events.read", "prompt.contribute.internal"];
+  const { errors, warnings } = comparePermissionsWithCode("p", declared, source);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(warnings, []);
+});
+
+// --- 网络重试：传输故障不得与「文件缺失」混为一谈 -------------------------
+async function withServer(t, handler) {
+  const { createServer } = await import("node:http");
+  const server = createServer(handler);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  return `http://127.0.0.1:${server.address().port}`;
+}
+
+test("fetchWithRetry recovers from a transient failure", async (t) => {
+  let hits = 0;
+  const base = await withServer(t, (req, res) => {
+    hits += 1;
+    if (hits === 1) { req.destroy(); return; }
+    res.writeHead(200).end("ok");
+  });
+  const { res, error } = await fetchWithRetry(`${base}/README.md`, { timeoutMs: 5_000, backoffMs: 1 });
+  assert.equal(error, undefined);
+  assert.equal(res.status, 200);
+  assert.equal(hits, 2);
+});
+
+test("fetchWithRetry returns 404 immediately without retrying", async (t) => {
+  let hits = 0;
+  const base = await withServer(t, (_req, res) => {
+    hits += 1;
+    res.writeHead(404).end("nope");
+  });
+  const { res, error } = await fetchWithRetry(`${base}/README.md`, { timeoutMs: 5_000, backoffMs: 1 });
+  assert.equal(error, undefined);
+  assert.equal(res.status, 404);
+  assert.equal(hits, 1, "404 is deterministic; retrying it only slows CI down");
+});
+
+test("fetchWithRetry reports exhausted retries on persistent 503", async (t) => {
+  let hits = 0;
+  const base = await withServer(t, (_req, res) => {
+    hits += 1;
+    res.writeHead(503).end("busy");
+  });
+  const { res, error } = await fetchWithRetry(`${base}/README.md`, { timeoutMs: 5_000, backoffMs: 1 });
+  assert.equal(res, undefined);
+  assert.match(error, /503/);
+  assert.equal(hits, 3);
 });
