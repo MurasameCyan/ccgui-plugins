@@ -3,6 +3,14 @@
 规范全文见 desktop-cc-gui 仓库 `docs/plugin-development-guide.zh-CN.md`。
 本文件只记录规范的演进；每次规范变更（新权限、新字段、规则收紧）在此追加一段。
 
+## v0.3 — 2026-10（编辑精选：featured.json）
+
+- 新增仓根 `featured.json`：市场页首屏轮播的唯一致据源。数组，顺序 = 优先级，≤ 8 条；字段 `id`（必填，须为已登记 id）、`tagline` / `note`（选填编辑文案）、`image`（选填封面，相对路径按插件仓库解析，规则同 icon/screenshots）。
+- 缺省合法：没有这个文件 = 没有精选区（最快的回滚方式）；客户端对校验不通过的行静默丢弃，不渲染装不了的推荐位。
+- 封面回退链：`image` → 插件第一张截图（按原比例装帧，不裁切）→ `icon` → 品牌色首字块。
+- 校验：`scripts/validate.mjs` 的 `validateFeatured`（id 存在性 / 重复 / 上限 / 文案非空且无控制字符 / 封面路径形状）。
+- App 侧渲染、自动播放与暂停约定见 desktop-cc-gui `docs/ui-ux-spec.zh-CN.md` §3「编辑精选轮播」。
+
 ## v0.2 — 2026-09（展示素材：icon / screenshots）
 
 - 新增可选字段 `icon`（方形图标，一个）与 `screenshots`（效果图，≤ 5 张），位置：插件仓库 `manifest.json`；首次上架时照样写入 `plugins/<id>.json`。
