@@ -120,21 +120,47 @@ export function compareSemver(a, b) {
 // ---------------------------------------------------------------------------
 // schema 常量
 // ---------------------------------------------------------------------------
-// pluginIdShapes：全 ASCII、总长 2..64 字节；每个点分段首字符须为小写字母或数字。
+/**
+ * 插件 id：镜像 plugin-sdk/spec/permissions.json 的 pluginIdShapes
+ * （与 Rust src-tauri/src/plugins/manifest.rs::is_valid_id 逐字节一致）。
+ * 总长 2..=64；点分段，每段 [a-z0-9][a-z0-9-]*。id 同时是安装目录名，
+ * 故该规则也是路径穿越护栏（禁 `/`、`\`、`..`、首尾点、空段）。
+ * 无需 `m` 的 `$` 只保证「行尾」，尾巴上盖 (?![\s\S]) 才是真正的字符串尾：
+ * 否则 "ab\n" / "ab\u2028" 这类带尾随换行的 id 会被放行。
+ */
 const ID_RE = /^[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$(?![\s\S])/;
+const ID_MIN_BYTES = 2;
+const ID_MAX_BYTES = 64;
+
+/**
+ * Release 附件名：镜像宿主 src-tauri/src/plugins/market.rs::is_valid_asset_name。
+ * 客户端把每个固定附件按原名平铺写进 staging 树，所以只接受扁平名
+ * （禁子目录、禁 `.`/`..`），字符集 [A-Za-z0-9._-]。
+ */
+const ASSET_NAME_RE = /^[A-Za-z0-9._-]+$/;
+
+export function isValidAssetName(name) {
+  return typeof name === "string" && name !== "." && name !== ".." && ASSET_NAME_RE.test(name);
+}
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const SHA256_RE = /^[0-9a-f]{64}$/;
 const SDK_RANGE_RE = /^(\^|~|>=)?\d+\.\d+(\.\d+)?$|^\*$/;
 const TIERS = new Set(["declarative", "js"]);
 const ENTRY_KEYS = new Set([
-  "id", "repo", "tier", "version", "minAppVersion", "sdkVersion",
+  // updatedAt：宿主 IndexDetail 读取的固定发布时间（规范 §10.3，机器人登记
+  // 新版本时写入）。原先缺这一键，带它的条目会被判「未知字段」。
+  "id", "repo", "tier", "version", "updatedAt", "minAppVersion", "sdkVersion",
   "permissions", "sha256", "delisted", "pubkey", "icon", "screenshots",
 ]);
+/** RFC 3339 UTC，与宿主 updated_at 的渲染口径一致。 */
+const UPDATED_AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const COMMUNITY_KEYS = new Set(["id", "repo", "name", "description", "author"]);
 
 /** 与宿主的插件目录名/路径穿越护栏一致，登记与自动升级共用。 */
 export function isValidPluginId(id) {
-  return typeof id === "string" && id.length >= 2 && id.length <= 64 && ID_RE.test(id);
+  if (typeof id !== "string") return false;
+  const bytes = Buffer.byteLength(id, "utf8");
+  return bytes >= ID_MIN_BYTES && bytes <= ID_MAX_BYTES && ID_RE.test(id);
 }
 
 /** 展示素材（SPEC-CHANGELOG v0.2）：manifest 声明，机器人镜像进索引。 */
@@ -547,6 +573,9 @@ export function validateEntry(entry, fileName, errors, warnings) {
   if (!parseSemver(entry.version)) {
     errors.push(`${where}.version "${entry.version}" 不合法：semver 三段数字`);
   }
+  if (entry.updatedAt !== undefined && !UPDATED_AT_RE.test(entry.updatedAt)) {
+    errors.push(`${where}.updatedAt "${entry.updatedAt}" 不合法：需 RFC 3339 UTC（如 2026-09-20T08:30:00Z）`);
+  }
   if (entry.minAppVersion !== undefined && !parseSemver(entry.minAppVersion)) {
     errors.push(`${where}.minAppVersion "${entry.minAppVersion}" 不合法`);
   }
@@ -582,8 +611,11 @@ export function validateEntry(entry, fileName, errors, warnings) {
       errors.push(`${where}.sha256["main.js"] 缺失或不合法（tier=js 必须有 main.js）`);
     }
     for (const [file, hash] of Object.entries(sha)) {
-      if (!["main.js", "manifest.json", "styles.css"].includes(file)) {
-        errors.push(`${where}.sha256 含非法附件名 "${file}"（只允许 main.js/manifest.json/styles.css）`);
+      if (!isValidAssetName(file)) {
+        errors.push(
+          `${where}.sha256 含非法附件名 "${file}"` +
+          `（需扁平文件名 [A-Za-z0-9._-]，禁子目录与 . / ..——客户端把附件平铺进 staging 树）`,
+        );
       } else if (file === "manifest.json" || (file === "main.js" && entry.tier === "js")) {
         continue; // 已在上方必填检查中报过
       } else if (typeof hash !== "string" || !SHA256_RE.test(hash)) {
@@ -599,9 +631,15 @@ export function validateEntry(entry, fileName, errors, warnings) {
 async function checkRelease(entry, errors, warnings, report) {
   const { id, repo, version, tier } = entry;
   const tag = version; // 规范 §4：tag 必须 == version，无 v 前缀
-  const assets = ["manifest.json"];
-  if (tier === "js") assets.push("main.js");
-  if (entry.sha256["styles.css"]) assets.push("styles.css");
+  // 客户端安装会下载索引固定的**每一个**附件（market.rs::install_from_marketplace
+  // 遍历 entry.sha256 的全部键），所以远端核查范围必须与固定集一致，
+  // 否则多余/漏传的附件要到用户安装时才暴露。
+  const pinned = Object.keys(entry.sha256 ?? {}).filter(isValidAssetName).sort();
+  const assets = [
+    "manifest.json",
+    ...(tier === "js" ? ["main.js"] : []),
+    ...pinned.filter((name) => name !== "manifest.json" && name !== "main.js"),
+  ];
 
   const downloaded = {};
   for (const file of assets) {
