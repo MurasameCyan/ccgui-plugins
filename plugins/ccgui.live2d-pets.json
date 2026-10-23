@@ -3,6 +3,7 @@
   "repo": "MurasameCyan/ccgui-plugin-live2d-pets",
   "tier": "js",
   "version": "1.0.10",
+  "updatedAt": "2026-10-15T09:57:10Z",
   "minAppVersion": "1.0.4",
   "sdkVersion": ">=0.3.20",
   "permissions": [
