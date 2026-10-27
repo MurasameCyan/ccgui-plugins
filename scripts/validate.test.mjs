@@ -11,13 +11,13 @@ import {
 } from "./validate.mjs";
 import { buildBumpedEntry } from "./bump-versions.mjs";
 
-// Behavioral inputs mirrored from plugin-sdk/spec/permissions.json (SDK 0.3.20).
+// Behavioral inputs mirrored from plugin-sdk/spec/permissions.json (SDK 0.3.22).
 // Exercise the real registration/bump validators, not a second implementation.
 const knownPermissions = [
   "storage", "ui:settings-section", "ui:add-menu", "ui:composer-status",
   "ui:panel-tab", "ui:status-bar", "ui:overlay", "ui:command", "ui:markdown",
   "ui:page", "ui:timeline-row", "ui:workspace-menu", "ui:session-menu",
-  "ui:sidebar-entry", "ui:center-tab", "ui:conversation-mode", "agent", "theme",
+  "ui:sidebar-entry", "ui:center-tab", "ui:worktree-badge", "ui:conversation-mode", "agent", "theme",
   "i18n", "events", "network:none", "composer:draft", "host:session",
   "host:workspace", "host:workspace:remote", "host:worktree", "host:window",
   "host:models", "session.lifecycle.read", "runtime.events.read",
@@ -349,6 +349,7 @@ test("permission comparison detects host namespaces through their real methods",
     [`x.theme.setTokens({})`, "theme"],
     [`x.agent.start({})`, "agent"],
     [`x.worktrees.create({})`, "host:worktree"],
+    [`x.ui.registerWorktreeBadges({})`, "ui:worktree-badge"],
     [`x.composer.setDraft("")`, "composer:draft"],
   ];
   for (const [source, permission] of calls) {

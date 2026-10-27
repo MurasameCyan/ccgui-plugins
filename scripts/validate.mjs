@@ -35,7 +35,7 @@ const FEATURED_MAX_ROWS = 8;
 const FEATURED_KEYS = new Set(["id", "tagline", "note", "image"]);
 
 // ---------------------------------------------------------------------------
-// 权限白名单（镜像 plugin-sdk/spec/permissions.json，SDK 0.3.20；勿在此独断修改）
+// 权限白名单（镜像 plugin-sdk/spec/permissions.json，SDK 0.3.22；勿在此独断修改）
 // ---------------------------------------------------------------------------
 const KNOWN_PERMISSIONS = new Set([
   "storage",
@@ -53,6 +53,7 @@ const KNOWN_PERMISSIONS = new Set([
   "ui:session-menu",
   "ui:sidebar-entry",
   "ui:center-tab",
+  "ui:worktree-badge",
   "ui:conversation-mode",
   "agent",
   "theme",
@@ -290,6 +291,7 @@ const CTX_PERMISSION_MAP = [
   { api: "ui.registerSidebarNav", re: /\.ui\.registerSidebarNav\s*\(/, requires: "ui:sidebar-entry" },
   { api: "ui.registerCenterTab", re: /\.ui\.registerCenterTab\s*\(/, requires: "ui:center-tab" },
   { api: "ui.openCenterTab", re: /\.ui\.openCenterTab\s*\(/, requires: "ui:center-tab" },
+  { api: "ui.registerWorktreeBadges", re: /\.ui\.registerWorktreeBadges\s*\(/, requires: "ui:worktree-badge" },
   { api: "ui.registerWorkspaceMenuItem", re: /\.ui\.registerWorkspaceMenuItem\s*\(/, requires: "ui:workspace-menu" },
   { api: "ui.registerSessionMenuItem", re: /\.ui\.registerSessionMenuItem\s*\(/, requires: "ui:session-menu" },
   { api: "ui.registerOverlay", re: /\.ui\.registerOverlay\s*\(/, requires: "ui:overlay" },

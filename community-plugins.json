@@ -84,6 +84,13 @@
     "author": "3774929"
   },
   {
+    "id": "github-tasks",
+    "repo": "zhukunpenglinyutong/ccgui-plugin-git-tasks",
+    "name": "CCGUI · Git 任务管理",
+    "description": "只读的多仓库 PR 流转看板：每日新增、我审没审、作者修没修、修完我看没看；看板拖拽只记本地标记；侧栏 worktree 显示 PR 状态。",
+    "author": "zhukunpenglinyutong"
+  },
+  {
     "id": "mermaid-markdown",
     "repo": "zenghui6/ccgui-plugin-mermaid-markdown",
     "name": "Mermaid 图表",
