@@ -3,7 +3,7 @@
     "id": "ai-quota-monitor",
     "repo": "libo-zhou/ccgui-plugin-ai-quota-monitor",
     "name": "AI 配额与用量监控",
-    "description": "当前支持 Google Antigravity（Gemini）和 OpenAI Codex，查看可用额度、用量与重置时间；其他 AI 服务待适配。支持底部状态栏、详情弹窗、自动刷新及当前会话联动。",
+    "description": "支持 Google Antigravity (Gemini)、OpenAI Codex 与 CodeBuddy 账号积分，查看可用额度、积分余额与重置时间。支持底部状态栏、单个模型详情看板、自动刷新及当前会话智能联动。",
     "author": "libo-zhou"
   },
   {
@@ -17,7 +17,7 @@
     "id": "background-ui",
     "repo": "Mermenglin/ccgui-plugin-background-ui",
     "name": "背景和 UI 优化",
-    "description": "应用背景、12 套主题配色、幕布、时间线、页签、聚焦光晕、滚动条等界面细节优化;内置 Wallhaven / UPX8 在线壁纸图库,支持搜索、分页、预览、设为背景与历史管理;图片经本机 node 分片下载。能力提取自模型与供应商助手插件。",
+    "description": "应用背景、12 套主题配色、幕布、时间线、页签、聚焦光晕、滚动条等界面外观优化;内置 Wallhaven / UPX8 在线壁纸图库,支持搜索、分页、预览、设为背景与历史管理;图片经本机 node 分片下载。能力提取自 Guardian-J 的上游插件（完整来源见 README）。",
     "author": "Mermenglin"
   },
   {
@@ -70,6 +70,13 @@
     "author": "wszbest68-gif"
   },
   {
+    "id": "file-preview-panel",
+    "repo": "PartyNextDoor999/ccgui-plugin-file-preview-panel",
+    "name": "文件预览面板",
+    "description": "在右侧面板浏览工作区文件树，直接预览 Markdown（含 Mermaid 图表）与文本文件，不另开主标签页。仅支持 Windows。",
+    "author": "PartyNextDoor999"
+  },
+  {
     "id": "font-tuner",
     "repo": "3774929/ccgui-plugin-font-tuner",
     "name": "字体调校",
@@ -112,11 +119,25 @@
     "author": "zhukunpenglinyutong"
   },
   {
+    "id": "scheduled-tasks",
+    "repo": "linfeng-wu/ccgui-plugin-scheduled-tasks",
+    "name": "定时任务",
+    "description": "用 5 字段 cron 在指定工作区定时发起 AI 轮次：每轮在侧栏新建可见会话，实时流式、可接管可停止；支持技能绑定、自然语言建任务、运行记录、失败退避与自动暂停。CC GUI 关闭时不执行。",
+    "author": "linfeng-wu"
+  },
+  {
     "id": "service-status",
     "repo": "zhukunpenglinyutong/ccgui-plugin-service-status",
     "name": "服务状态",
     "description": "在中心页签聚合 Claude / OpenAI / Cursor / GitHub / Gemini / Kimi / MiniMax / Zed 官方状态页的实时事故状态，每分钟自动刷新。",
     "author": "zhukunpenglinyutong"
+  },
+  {
+    "id": "session-engine-filter",
+    "repo": "mai-ming/ccgui-plugin-session-engine-filter",
+    "name": "会话来源屏蔽",
+    "description": "按 CLI 引擎屏蔽侧边栏会话：勾掉不想看的引擎（Pi、Codex、Grok、Kimi…），它们的会话行就不再出现在各工作区列表里；随时可恢复，只影响显示，不动会话数据。",
+    "author": "mai-ming"
   },
   {
     "id": "session-notes",

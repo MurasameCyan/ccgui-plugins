@@ -1,0 +1,23 @@
+{
+  "id": "file-preview-panel",
+  "repo": "PartyNextDoor999/ccgui-plugin-file-preview-panel",
+  "tier": "js",
+  "version": "1.0.0",
+  "minAppVersion": "1.1.0",
+  "sdkVersion": "^0.3",
+  "permissions": [
+    "ui:panel-tab",
+    "ui:overlay",
+    "storage",
+    "i18n",
+    "assets:bundle",
+    "exec:git",
+    "exec:powershell"
+  ],
+  "sha256": {
+    "manifest.json": "a3f919e7a478aa082c575c842e08367b2ec9ea97d8f9a794b65db7af770c7240",
+    "main.js": "de25c04351b2c519eb38a131399d36e30b27193b8ce4dbb32654d6df984e4fdf",
+    "styles.css": "fc221a7cf31c841a0f2e9640e747a50c5c2f657a54db1d4f6445bec7aa79ddba",
+    "mermaid.min.js": "581ed7d74bd9048d0e3a91363927d72ef22942d7722546b27f7cc29e35390eb8"
+  }
+}
