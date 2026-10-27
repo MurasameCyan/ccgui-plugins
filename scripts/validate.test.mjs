@@ -190,6 +190,18 @@ test("bump preflight accepts CCB permissions and produces a valid registration",
   assert.equal(fetchMock.mock.calls.length, 2);
 });
 
+test("bump records the Release publication time for future market updates", async (t) => {
+  const old = entry({ version: "1.0.1", updatedAt: "2026-10-01T00:00:00Z" });
+  const candidate = { ...old, version: "1.0.2" };
+  const { files } = releaseFetch(t, candidate);
+  const publishedAt = "2026-10-28T01:02:03Z";
+  const result = await buildBumpedEntry(old.id, old, candidate.version, candidate,
+    Object.keys(files), publishedAt);
+  assert.equal(result.skip, undefined);
+  assert.equal(result.entry.updatedAt, publishedAt);
+  assert.deepEqual(entryErrors(result.entry), []);
+});
+
 test("bump refreshes every reviewed runtime asset without installing release archives", async (t) => {
   const old = entry({
     version: "1.0.1",

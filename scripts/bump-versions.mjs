@@ -64,11 +64,15 @@ export async function latestReleaseTag(repo) {
   return { tag: decodeURIComponent(m[1]) };
 }
 
+function isValidPublishedAt(value) {
+  return typeof value === "string" && value.endsWith("Z") && !Number.isNaN(Date.parse(value));
+}
+
 /**
  * 核查候选版本并构建新登记条目。
  * @returns {{ entry?: object, skip?: string, notes: string[] }}
  */
-export async function buildBumpedEntry(id, old, tag, manifest, assets) {
+export async function buildBumpedEntry(id, old, tag, manifest, assets, updatedAt) {
   const notes = [];
   if (!isValidPluginId(id)) return { notes, skip: `索引 id "${id}" 不合法` };
   if (manifest.id !== id) return { notes, skip: `manifest.id "${manifest.id}" ≠ 索引 id "${id}"` };
@@ -156,6 +160,7 @@ export async function buildBumpedEntry(id, old, tag, manifest, assets) {
     repo: old.repo,
     tier: old.tier,
     version: tag,
+    ...(updatedAt !== undefined ? { updatedAt } : {}),
     ...(manifest.minAppVersion ? { minAppVersion: manifest.minAppVersion } : {}),
     ...(manifest.sdkVersion ? { sdkVersion: manifest.sdkVersion } : {}),
     permissions,
@@ -167,8 +172,8 @@ export async function buildBumpedEntry(id, old, tag, manifest, assets) {
   return { entry, notes };
 }
 
-/** Release 的附件清单（判断 styles.css 是否存在；API 不可用回退按旧条目推断）。 */
-async function listReleaseAssets(repo, tag) {
+/** Release 元数据：附件清单和公开发布时间；两者缺一不可，避免自动登记丢失 updatedAt。 */
+async function getReleaseMetadata(repo, tag) {
   const token = process.env.GH_TOKEN;
   try {
     const res = await fetch(`https://api.github.com/repos/${repo}/releases/tags/${tag}`, {
@@ -180,11 +185,15 @@ async function listReleaseAssets(repo, tag) {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return (data.assets ?? []).map((a) => a.name);
+    return {
+      assets: (data.assets ?? []).map((asset) => asset.name),
+      publishedAt: isValidPublishedAt(data.published_at) ? data.published_at : null,
+    };
   } catch {
     return null;
   }
 }
+
 
 async function planPlugin(id, old) {
   const { tag, error } = await latestReleaseTag(old.repo);
@@ -205,15 +214,16 @@ async function planPlugin(id, old) {
     return { id, action: "skip", reason: `manifest.json 解析失败：${err.message}` };
   }
 
-  let assets = await listReleaseAssets(old.repo, tag);
-  if (assets === null) {
-    // API 不可用：回退为探测下载 styles.css（仅当旧条目登记过或新版本可能有）
-    assets = ["manifest.json", "main.js"];
-    const probe = await downloadAsset(old.repo, tag, "styles.css");
-    if (!probe.error) assets.push("styles.css");
+  const release = await getReleaseMetadata(old.repo, tag);
+  if (!release) {
+    return { id, action: "skip", reason: `${old.version} → ${tag}：无法读取 Release 元数据` };
   }
-
-  const { entry, skip, notes } = await buildBumpedEntry(id, old, tag, manifest, assets);
+  if (!release.publishedAt) {
+    return { id, action: "skip", reason: `${old.version} → ${tag}：Release 缺少合法 published_at` };
+  }
+  const { entry, skip, notes } = await buildBumpedEntry(
+    id, old, tag, manifest, release.assets, release.publishedAt,
+  );
   if (skip) return { id, action: "skip", reason: `${old.version} → ${tag}：${skip}` };
 
   const oldPerms = new Set(old.permissions ?? []);
