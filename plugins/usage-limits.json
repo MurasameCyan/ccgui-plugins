@@ -1,0 +1,32 @@
+{
+  "id": "usage-limits",
+  "repo": "zhukunpenglinyutong/ccgui-plugin-usage-limits",
+  "tier": "js",
+  "version": "0.1.3",
+  "minAppVersion": "1.1.9",
+  "sdkVersion": ">=0.3.23",
+  "permissions": [
+    "ui:status-bar",
+    "ui:sidebar-entry",
+    "ui:center-tab",
+    "ui:settings-section",
+    "ui:command",
+    "storage",
+    "events",
+    "host:workspace",
+    "usage.read",
+    "limits.read"
+  ],
+  "sha256": {
+    "main.js": "0e9734b51f6db32fe1e8d0a9dd0028beab4ff6033e24de85829f705d4eb752e8",
+    "manifest.json": "0b79514ff1a5c4073c15c7e072087a9d4651eba507d729edca02986b43fcd124",
+    "styles.css": "390b5ac5c0a583f244e176bba3a6fccedeb6785e11024b80c4c0baf41710acbb"
+  },
+  "icon": "docs/icon.png",
+  "screenshots": [
+    "docs/screenshot-1.png",
+    "docs/screenshot-2.png",
+    "docs/screenshot-3.png",
+    "docs/screenshot-4.png"
+  ]
+}
