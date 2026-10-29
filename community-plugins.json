@@ -168,6 +168,13 @@
     "author": "zhukunpenglinyutong"
   },
   {
+    "id": "usage-limits",
+    "repo": "zhukunpenglinyutong/ccgui-plugin-usage-limits",
+    "name": "用量与限额",
+    "description": "状态栏常驻今日 token、估算费用与 Claude / Codex 的 5h / 7d 限额标签（带平台图标），点开看趋势、项目 / 模型明细与节奏预测；数据由 CC GUI 在本机从各 CLI 日志计算，不上传。",
+    "author": "zhukunpenglinyutong"
+  },
+  {
     "id": "window-model-assistant",
     "repo": "wszbest68-gif/ccgui-plugin-window-model-assistant",
     "name": "窗口与模型助手",
