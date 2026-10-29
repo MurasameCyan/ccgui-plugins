@@ -3,7 +3,7 @@
     "id": "ai-quota-monitor",
     "repo": "libo-zhou/ccgui-plugin-ai-quota-monitor",
     "name": "AI 配额与用量监控",
-    "description": "支持 Google Antigravity (Gemini)、OpenAI Codex 与 CodeBuddy 账号积分，查看可用额度、积分余额与重置时间。支持底部状态栏、单个模型详情看板、自动刷新及当前会话智能联动。",
+    "description": "支持 Google Antigravity (Gemini)、OpenAI Codex 与 CodeBuddy 积分，查看可用额度、Token 消耗与成本、用量热力图与重置时间。支持状态栏与智能联动。",
     "author": "libo-zhou"
   },
   {
@@ -165,6 +165,13 @@
     "repo": "zhukunpenglinyutong/ccgui-plugin-token-meter",
     "name": "Token 速度表",
     "description": "composer 状态行实时显示 token 输出速度与缓存命中率，支持全部 11 个 CLI 引擎。",
+    "author": "zhukunpenglinyutong"
+  },
+  {
+    "id": "usage-limits",
+    "repo": "zhukunpenglinyutong/ccgui-plugin-usage-limits",
+    "name": "用量与限额",
+    "description": "状态栏常驻今日 token、估算费用与 Claude / Codex 的 5h / 7d 限额标签（带平台图标），点开看趋势、项目 / 模型明细与节奏预测；数据由 CC GUI 在本机从各 CLI 日志计算，不上传。",
     "author": "zhukunpenglinyutong"
   },
   {

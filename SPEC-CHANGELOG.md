@@ -3,6 +3,12 @@
 规范全文见 desktop-cc-gui 仓库 `docs/plugin-development-guide.zh-CN.md`。
 本文件只记录规范的演进；每次规范变更（新权限、新字段、规则收紧）在此追加一段。
 
+## v0.5 — 2026-10（SDK 0.3.23 权限：usage.read / limits.read / ui:file-link-menu）
+
+- 基座权限同步宿主 SDK 0.3.23 的 `packages/plugin-sdk/spec/permissions.json`（37 → 40 项）：新增 `usage.read`（读取宿主计算的用量聚合、触发增量刷新 / 重新扫描 / 价格表更新）、`limits.read`（读取 Claude / Codex 订阅限额）与 `ui:file-link-menu`（文件链接右键菜单项）。
+- 权限-代码比对补上三组调用点：`ui.registerFileLinkMenuItem`、`usage.query / sources / refresh / rescan / prices / updatePrices`、`limits.get`；否则新能力会被误判成「声明了但没用到」。
+- 用 `usage.read` / `limits.read` 的插件必须声明 `minAppVersion` ≥ 1.1.9：索引只做登记与产物核查，版本门禁仍由客户端按 manifest 执行。
+
 ## v0.4 — 2026-10（SDK 0.3.20 权限与命名空间 ID）
 
 - 基座权限同步宿主 SDK 0.3.20 的 `packages/plugin-sdk/spec/permissions.json`，共 36 项；首次登记与版本机器人共用同一校验器，不对单个插件设置豁免。

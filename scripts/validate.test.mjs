@@ -11,16 +11,17 @@ import {
 } from "./validate.mjs";
 import { buildBumpedEntry } from "./bump-versions.mjs";
 
-// Behavioral inputs mirrored from plugin-sdk/spec/permissions.json (SDK 0.3.22).
+// Behavioral inputs mirrored from plugin-sdk/spec/permissions.json (SDK 0.3.23).
 // Exercise the real registration/bump validators, not a second implementation.
 const knownPermissions = [
   "storage", "ui:settings-section", "ui:add-menu", "ui:composer-status",
   "ui:panel-tab", "ui:status-bar", "ui:overlay", "ui:command", "ui:markdown",
   "ui:page", "ui:timeline-row", "ui:workspace-menu", "ui:session-menu",
-  "ui:sidebar-entry", "ui:center-tab", "ui:worktree-badge", "ui:conversation-mode", "agent", "theme",
+  "ui:file-link-menu", "ui:sidebar-entry", "ui:center-tab", "ui:worktree-badge",
+  "ui:conversation-mode", "agent", "theme",
   "i18n", "events", "network:none", "composer:draft", "host:session",
   "host:workspace", "host:workspace:remote", "host:worktree", "host:window",
-  "host:models", "session.lifecycle.read", "runtime.events.read",
+  "host:models", "usage.read", "limits.read", "session.lifecycle.read", "runtime.events.read",
   "runtime.switch.observe", "prompt.contribute.internal", "workspace.metadata.read",
   "plugin.storage", "assets:bundle", "assets:directory",
 ];
@@ -152,6 +153,21 @@ test("unknown permissions and malformed network/exec grants remain rejected", ()
     assert.ok(entryErrors(entry({ permissions: [permission] }))
       .some((error) => error.includes("permissions")), JSON.stringify(permission));
   }
+});
+
+test("usage.read / limits.read / ui:file-link-menu map to their SDK calls", () => {
+  const code = "t.usage.query({}); t.limits.get(); t.ui.registerFileLinkMenuItem({});";
+  const missing = comparePermissionsWithCode("usage-limits", [], code);
+  for (const permission of ["usage.read", "limits.read", "ui:file-link-menu"]) {
+    assert.ok(missing.errors.some((error) => error.includes(`"${permission}"`)), permission);
+  }
+  const ok = comparePermissionsWithCode(
+    "usage-limits",
+    ["usage.read", "limits.read", "ui:file-link-menu"],
+    code,
+  );
+  assert.deepEqual(ok.errors, []);
+  assert.deepEqual(ok.warnings, []);
 });
 
 test("permissions must remain an array of strings", () => {

@@ -16,7 +16,7 @@
  *   附加：--report <path>（Markdown 审核报告） --result <path>（机器可读结果）
  *
  * 权限白名单镜像 desktop-cc-gui packages/plugin-sdk/spec/permissions.json
- * （单一事实源）；宿主升级白名单时此处必须同步。
+ * （单一事实源，SDK 0.3.23）；宿主升级白名单时此处必须同步。
  */
 import { readFileSync, readdirSync, existsSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -51,6 +51,7 @@ const KNOWN_PERMISSIONS = new Set([
   "ui:timeline-row",
   "ui:workspace-menu",
   "ui:session-menu",
+  "ui:file-link-menu",
   "ui:sidebar-entry",
   "ui:center-tab",
   "ui:worktree-badge",
@@ -67,6 +68,8 @@ const KNOWN_PERMISSIONS = new Set([
   "host:worktree",
   "host:window",
   "host:models",
+  "usage.read",
+  "limits.read",
   "session.lifecycle.read",
   "runtime.events.read",
   "runtime.switch.observe",
@@ -294,6 +297,7 @@ const CTX_PERMISSION_MAP = [
   { api: "ui.registerWorktreeBadges", re: /\.ui\.registerWorktreeBadges\s*\(/, requires: "ui:worktree-badge" },
   { api: "ui.registerWorkspaceMenuItem", re: /\.ui\.registerWorkspaceMenuItem\s*\(/, requires: "ui:workspace-menu" },
   { api: "ui.registerSessionMenuItem", re: /\.ui\.registerSessionMenuItem\s*\(/, requires: "ui:session-menu" },
+  { api: "ui.registerFileLinkMenuItem", re: /\.ui\.registerFileLinkMenuItem\s*\(/, requires: "ui:file-link-menu" },
   { api: "ui.registerOverlay", re: /\.ui\.registerOverlay\s*\(/, requires: "ui:overlay" },
   { api: "ui.registerConversationMode", re: /\.ui\.registerConversationMode\s*\(/, requires: "ui:conversation-mode" },
   // 通用名字的 namespace（models / sessions / window / storage / events …）必须
@@ -311,6 +315,12 @@ const CTX_PERMISSION_MAP = [
   { api: "workspace.getMetadata", re: /\.workspace\.getMetadata\s*\(/, requires: "workspace.metadata.read" },
   { api: "workspaces.add", re: /\.workspaces\.add\s*\(/, requires: "host:workspace" },
   { api: "workspaces.list", re: /\.workspaces\.list\s*\(/, requires: "host:workspace" },
+  {
+    api: "usage.*",
+    re: /\.usage\.(query|sources|refresh|rescan|prices|updatePrices)\s*\(/,
+    requires: "usage.read",
+  },
+  { api: "limits.get", re: /\.limits\.get\s*\(/, requires: "limits.read" },
   { api: "worktrees.*", re: /\.worktrees\.(create|remove)\s*\(/, requires: "host:worktree" },
   {
     api: "sessions.*",
